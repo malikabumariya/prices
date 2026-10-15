@@ -6,6 +6,12 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#a8620a">
 <link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Аз-Захра">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0;font:14px system-ui,sans-serif}[hidden]{display:none!important}img{max-width:100%}</style>
 <title>Прайс Аз-Захра</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -199,4 +205,5 @@ async function tryPin(pin,quiet){
 document.getElementById('gf').addEventListener('submit',e=>{e.preventDefault();tryPin(document.getElementById('pin').value)});
 (async()=>{let p=null;try{p=localStorage.getItem('az-pin')}catch(e){} if(p) await tryPin(p,true)})();
 </script>
+<script>if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});</script>
 </html>
