@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Развитие Хузайфы</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@600;700&family=Rubik:wght@400;500;600&family=Amiri:wght@700&display=swap">
+<style>
+/* Layout: one column, day tabs on top, today's evening plan as a timeline, then week theme and milestones */
+:root{
+  --bg:#f3f7fb; --card:#ffffff; --ink:#1f2a37; --muted:#5b6b7c; --line:#dbe4ee;
+  --sky:#2f7fd0; --sun:#f2b632; --leaf:#3f9b6b; --berry:#d2557a; --done:#e6f4ec;
+  --display:"Comfortaa",system-ui,sans-serif; --body:"Rubik",system-ui,sans-serif; --ar:"Amiri","Noto Naskh Arabic",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121a23; --card:#1b2632; --ink:#e7eef5; --muted:#9db0c2; --line:#2c3a49;
+  --sky:#6aaef0; --sun:#f5c55a; --leaf:#62c08f; --berry:#ef7fa0; --done:#1d3a2c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121a23; --card:#1b2632; --ink:#e7eef5; --muted:#9db0c2; --line:#2c3a49;
+  --sky:#6aaef0; --sun:#f5c55a; --leaf:#62c08f; --berry:#ef7fa0; --done:#1d3a2c; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:680px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
+h1,h2{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:1.7rem}
+h2{font-size:1.15rem}
+.sub{color:var(--muted);margin:4px 0 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{font:500 .85rem var(--body);padding:6px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--berry);border-color:var(--berry);color:#fff}
+.chip:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+.area{margin-top:10px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:8px}
+.area h2{color:var(--berry)}
+.area ul{margin:0;padding-left:18px;display:grid;gap:6px}
+.area li::marker{color:var(--berry)}
+.area .go{justify-self:start;font:600 .85rem var(--body);background:var(--sky);color:#fff;border:0;border-radius:10px;padding:8px 14px;cursor:pointer}
+.tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.tab{font:600 .85rem var(--body);padding:9px 0;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}
+.tab.we{color:var(--leaf)}
+.tab[aria-selected="true"]{background:var(--sky);border-color:var(--sky);color:#fff}
+.tab:focus-visible,.item:focus-within{outline:2px solid var(--sun);outline-offset:2px}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.focus{font-size:.85rem;font-weight:600;color:var(--berry)}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+.progress i{display:block;height:100%;background:var(--leaf);width:0;transition:width .3s}
+.list{display:grid;gap:8px;margin-top:12px}
+.item{display:grid;grid-template-columns:56px 1fr 28px;gap:10px;align-items:start;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;cursor:pointer}
+.item.ok{background:var(--done)}
+.time{font:600 .85rem var(--body);color:var(--sky);font-variant-numeric:tabular-nums;padding-top:2px}
+.item b{display:block;font-weight:600}
+.item p{margin:2px 0 0;color:var(--muted);font-size:.9rem;min-width:0}
+.item input{width:22px;height:22px;accent-color:var(--leaf);margin:2px 0 0;cursor:pointer}
+.ar{font-family:var(--ar);font-size:1.25rem;color:var(--ink);direction:rtl;display:inline-block}
+.theme{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;display:grid;gap:8px}
+.theme .words{display:flex;flex-wrap:wrap;gap:6px}
+.theme .words span{background:var(--bg);border-radius:8px;padding:4px 9px;font-size:.9rem}
+.rules{margin:0;padding-left:18px;display:grid;gap:4px;color:var(--ink)}
+.rules li::marker{color:var(--sun)}
+details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+summary{font-family:var(--display);font-weight:700;cursor:pointer}
+.ms{display:grid;gap:6px;margin-top:10px}
+.ms label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.ms input{accent-color:var(--leaf);width:18px;height:18px;margin-top:2px}
+.ms h3{font:600 .8rem var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}
+.note{font-size:.85rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){.progress i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Развитие Хузайфы</h1>
+    <p class="sub">2,5 года · садик пн–пт 8:00–16:30. Вечером дома короткие занятия по 10–15 минут, в выходные больше.</p>
+    <div class="chips" id="chips"></div>
+    <div class="area" id="area" hidden></div>
+  </header>
+
+  <section>
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </section>
+
+  <section>
+    <div class="dayhead"><h2 id="dayTitle"></h2><span class="focus" id="dayFocus"></span></div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="list" id="list"></div>
+  </section>
+
+  <section class="theme" id="theme"></section>
+
+  <section class="theme">
+    <h2>Главные правила</h2>
+    <ul class="rules">
+      <li>После садика ребёнок устал: сначала обнять, покормить, 20–30 минут свободной игры. Занятия потом.</li>
+      <li>Одно занятие 10–15 минут. Не хочет — не заставлять, попробовать завтра.</li>
+      <li>Говорить с ним весь вечер: называть всё, что делаете («режем морковь, она оранжевая»).</li>
+      <li>Мультики и телефон лучше убрать совсем, особенно перед сном.</li>
+      <li>Хвалить за старание: «Ты сам надел носок!», а не просто «молодец».</li>
+      <li>Сон в 20:30–21:00. В этом возрасте ему нужно 11–14 часов сна в сутки вместе с дневным в садике.</li>
+    </ul>
+  </section>
+
+  <details>
+    <summary>Что обычно умеют к 3 годам</summary>
+    <div class="ms" id="ms"></div>
+    <p class="note">Все дети развиваются в своём темпе. Если что-то сильно беспокоит, особенно речь, покажите его педиатру или логопеду.</p>
+  </details>
+</div>
+
+<script>
+const days=[
+ {s:"Пн",n:"Понедельник",f:"Речь",a:[
+  ["17:00","Дома: отдых и ужин","Обнять, покормить, дать поиграть самому."],
+  ["17:45","Движение 10 мин","Танцы под нашиды, прыжки на двух ногах, «догони меня»."],
+  ["18:15","Говорим по картинкам","Книжка с картинками: «Кто это? Что он делает?» Ждите ответ, повторяйте его слова полнее: «Кот» → «Да, кот спит»."],
+  ["18:45","Помощник","Вместе убрать игрушки в коробку, говорить «машина в коробку, мяч в коробку»."],
+  ["19:45","Книга и сон","Короткая сказка, потом дуа перед сном: <span class='ar'>بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا</span>"]]},
+ {s:"Вт",n:"Вторник",f:"Мелкая моторика",a:[
+  ["17:00","Дома: отдых и ужин","Свободная игра без заданий."],
+  ["17:45","Движение 10 мин","Катать и бросать мяч, ходить по линии из скотча на полу."],
+  ["18:15","Пальчики","Пластилин: катать шарики и колбаски. Или нанизать крупные бусины на шнурок, переложить макароны ложкой."],
+  ["18:45","Сам кушает и пьёт","Пить из открытой чашки, есть ложкой сам. Не помогать сразу."],
+  ["19:45","Книга и сон","Сказка и дуа перед сном."]]},
+ {s:"Ср",n:"Среда",f:"Цвета и формы",a:[
+  ["17:00","Дома: отдых и ужин","Свободная игра."],
+  ["17:45","Движение 10 мин","Подлезть под стул, перешагнуть через подушки (полоса препятствий)."],
+  ["18:15","Сортировка","Разложить кубики или крышки по цветам в миски: «красное сюда, синее сюда». Потом большой и маленький."],
+  ["18:45","Пазл","Пазл из 2–4 больших частей или рамка-вкладыш с формами."],
+  ["19:45","Книга и сон","Сказка и дуа перед сном."]]},
+ {s:"Чт",n:"Четверг",f:"Творчество и ощущения",a:[
+  ["17:00","Дома: отдых и ужин","Свободная игра."],
+  ["17:45","Движение 10 мин","«Покажи как ходит»: медведь, зайчик, птичка."],
+  ["18:15","Рисуем","Пальчиковые краски или толстые мелки на большом листе. Называть цвета."],
+  ["18:45","Сенсорная коробка","Крупа или фасоль в тазике, спрятать игрушки, пусть ищет. Только под присмотром."],
+  ["19:45","Книга и сон","Сказка и дуа перед сном."]]},
+ {s:"Пт",n:"Пятница",f:"Адаб и арабский",a:[
+  ["17:00","Дома: отдых и ужин","Перед едой вместе говорить <span class='ar'>بِسْمِ اللَّهِ</span>, после еды <span class='ar'>الْحَمْدُ لِلَّهِ</span>."],
+  ["17:45","Движение 10 мин","Мяч, прыжки, обнимашки."],
+  ["18:15","3 арабских слова","Показать предмет и назвать: Кот (قِطٌّ), Мяч (كُرَةٌ), Вода (مَاءٌ). Можно из вашего словаря в картинках."],
+  ["18:45","Сура Аль-Фатиха","Слушать вместе 2–3 раза. Не заучивать, просто привыкать к звучанию."],
+  ["19:45","Книга и сон","Сказка о пророках простыми словами и дуа перед сном."]]},
+ {s:"Сб",n:"Суббота",f:"Прогулка и природа",w:1,a:[
+  ["10:00","Длинная прогулка","Парк или площадка: горка, лестницы, бег. Называть всё вокруг: дерево, птица, машина."],
+  ["12:00","Готовим вместе","Мыть овощи, перекладывать, мешать ложкой. Называть продукты."],
+  ["15:30","Игра с братишкой","Вместе с двоюродным братом: мяч, кубики, учиться делиться по очереди."],
+  ["17:00","Строим","Башня из кубиков, дорога для машинок, считать «один, два, три»."],
+  ["19:45","Книга и сон","Сказка и дуа перед сном."]]},
+ {s:"Вс",n:"Воскресенье",f:"Самостоятельность",w:1,a:[
+  ["09:30","Одеваюсь сам","Снять носки и шапку сам, попробовать надеть штаны. Дать время."],
+  ["11:00","Прогулка или в гости","Здороваться: «Ассаляму алейкум». Дать ему самому сказать."],
+  ["15:30","Ролевая игра","Покормить куклу или мишку, уложить спать, «поехали на машине в магазин»."],
+  ["17:00","Музыка","Стучать в кастрюлю ложкой: громко-тихо, быстро-медленно."],
+  ["19:45","Книга и сон","Сказка и дуа перед сном."]]}
+];
+const themes=[
+ {t:"Животные",w:["кот","собака","корова","лошадь","курица","верблюд"],i:"Показывать игрушки или картинки, изображать звуки: «Как говорит корова?»"},
+ {t:"Еда",w:["хлеб","яблоко","молоко","банан","вода","каша"],i:"Называть всё на кухне, давать ему потрогать и понюхать продукты."},
+ {t:"Транспорт",w:["машина","автобус","самолёт","поезд","едет","стоит"],i:"На прогулке считать машины, говорить «большая / маленькая», «быстро / медленно»."},
+ {t:"Тело и одежда",w:["руки","ноги","глаза","нос","шапка","обувь"],i:"«Где у тебя нос?» Одеваясь, называть каждую вещь."}
+];
+const milestones={
+ "Речь":["Говорит фразы из 2–3 слов","Называет знакомые предметы на картинках","Понимает простую просьбу из двух шагов","Чужие люди понимают часть его слов"],
+ "Движение":["Бегает, прыгает на двух ногах","Поднимается по лестнице","Бьёт ногой по мячу"],
+ "Руки и мышление":["Строит башню из 5–6 кубиков","Рисует линию и каракули-круги","Сортирует по цвету или форме","Играет «понарошку» (кормит куклу)"],
+ "Самостоятельность":["Ест сам ложкой","Снимает с себя простую одежду","Моет руки с помощью"]
+};
+const store={get(k){try{return JSON.parse(localStorage.getItem(k))||{}}catch(e){return{}}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function weekKey(d){const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=x.getUTCDay()||7;x.setUTCDate(x.getUTCDate()+4-n);const y=new Date(Date.UTC(x.getUTCFullYear(),0,1));return [x.getUTCFullYear(),Math.ceil(((x-y)/864e5+1)/7)]}
+const now=new Date();const [yr,wk]=weekKey(now);const KEY="huz-"+yr+"-"+wk;
+let done=store.get(KEY);
+let cur=(now.getDay()+6)%7;
+const tabs=document.getElementById("tabs");
+days.forEach((d,i)=>{const b=document.createElement("button");b.className="tab"+(d.w?" we":"");b.id="tab"+i;b.role="tab";b.textContent=d.s;b.onclick=()=>{cur=i;render()};tabs.appendChild(b)});
+function render(){
+ const d=days[cur];
+ [...tabs.children].forEach((b,i)=>b.setAttribute("aria-selected",i===cur));
+ document.getElementById("dayTitle").textContent=d.n+(cur===(now.getDay()+6)%7?" · сегодня":"");
+ document.getElementById("dayFocus").textContent=d.f;
+ const L=document.getElementById("list");L.innerHTML="";
+ let c=0;
+ d.a.forEach((a,j)=>{const id=cur+"-"+j;const ok=!!done[id];if(ok)c++;
+  const el=document.createElement("label");el.className="item"+(ok?" ok":"");
+  el.innerHTML=`<span class="time">${a[0]}</span><span><b>${a[1]}</b><p>${a[2]}</p></span><input type="checkbox" id="c${id}" ${ok?"checked":""} aria-label="${a[1]}">`;
+  el.querySelector("input").onchange=e=>{done[id]=e.target.checked;store.set(KEY,done);render()};
+  L.appendChild(el)});
+ document.getElementById("bar").style.width=(c/d.a.length*100)+"%";
+}
+const th=themes[wk%4];
+document.getElementById("theme").innerHTML=`<h2>Тема недели: ${th.t}</h2><p class="note" style="margin:0">Каждый день повторяйте эти слова в играх. Темы меняются каждую неделю по кругу.</p><div class="words">${th.w.map(x=>`<span>${x}</span>`).join("")}</div><p style="margin:0">${th.i}</p>`;
+const ms=store.get("huz-ms");const M=document.getElementById("ms");
+Object.entries(milestones).forEach(([g,list])=>{const h=document.createElement("h3");h.textContent=g;M.appendChild(h);
+ list.forEach((t,k)=>{const id=g+k;const l=document.createElement("label");l.innerHTML=`<input type="checkbox" id="m${k}${g.length}" ${ms[id]?"checked":""}><span>${t}</span>`;
+  l.querySelector("input").onchange=e=>{ms[id]=e.target.checked;store.set("huz-ms",ms)};M.appendChild(l)})});
+const areas={
+ "Речь":{d:0,why:"В 2,5 года словарь растёт быстрее всего. Главное — много говорить с ним и ждать его ответ.",i:[
+  "Называйте всё, что делаете: «Наливаю воду. Вода холодная».",
+  "Задавайте вопросы с выбором: «Тебе яблоко или банан?»",
+  "Расширяйте его фразу: он говорит «машина», вы — «Да, большая красная машина едет».",
+  "Читайте одну и ту же книжку много раз, потом пусть сам «дочитывает» слова.",
+  "Пальчиковые игры и простые стишки с движениями.",
+  "Не переспрашивайте и не заставляйте повторять правильно, просто скажите сами верно."]},
+ "Моторика":{d:1,why:"Пальчики готовят руку к письму и помогают развитию речи.",i:[
+  "Пластилин: шарики, колбаски, «печенье» формочками.",
+  "Нанизывать крупные бусины или макароны на шнурок.",
+  "Пересыпать крупу ложкой из миски в миску.",
+  "Открывать и закрывать крышки банок и бутылок.",
+  "Рвать бумагу на кусочки и клеить на лист.",
+  "Прищепки на край коробки."]},
+ "Мышление":{d:2,why:"Учится сравнивать, сортировать и находить причину и следствие.",i:[
+  "Сортировать по цвету: красные кубики в одну миску, синие в другую.",
+  "Большой — маленький: «Дай мне большую ложку».",
+  "Пазлы из 2–4 частей и рамки-вкладыши.",
+  "Прятать игрушку под одну из трёх чашек.",
+  "Считать до трёх всё вокруг: ступеньки, яблоки, машины.",
+  "Пирамидка, матрёшка, стаканчики-вкладыши."]},
+ "Движение":{d:5,why:"После садика ему нужно подвигаться. Движение помогает и мозгу, и сну.",i:[
+  "Прыгать на двух ногах с места и с низкой ступеньки.",
+  "Бросать и ловить большой мяч, бить по мячу ногой.",
+  "Полоса препятствий из подушек и стульев.",
+  "Ходить по линии из скотча на полу.",
+  "«Покажи как ходит» медведь, заяц, птица.",
+  "Танцы под нашиды, «замри» когда музыка стоп."]},
+ "Самостоятельность":{d:6,why:"«Я сам» — главное в этом возрасте. Дайте время и не делайте за него.",i:[
+  "Снимать носки, шапку, штаны сам.",
+  "Есть ложкой и пить из открытой чашки.",
+  "Мыть руки и вытирать полотенцем.",
+  "Убирать игрушки в коробку после игры.",
+  "Относить свою тарелку на кухню.",
+  "Выбирать из двух футболок, что надеть."]},
+ "Дуа и адаб":{d:4,why:"Ребёнок учится на примере. Говорите дуа вслух каждый раз, он начнёт повторять.",i:[
+  "Перед едой <span class='ar'>بِسْمِ اللَّهِ</span>, после еды <span class='ar'>الْحَمْدُ لِلَّهِ</span>.",
+  "Здороваться: «Ассаляму алейкум».",
+  "Есть и брать вещи правой рукой.",
+  "Слушать суру Аль-Фатиха и короткие суры.",
+  "Дуа перед сном <span class='ar'>بِاسْمِكَ اللَّهُمَّ أَمُوتُ وَأَحْيَا</span>.",
+  "Простые рассказы: «Аллах создал солнце, деревья, кошку»."]}
+};
+const C=document.getElementById("chips"),A=document.getElementById("area");let open=null;
+Object.keys(areas).forEach(k=>{const b=document.createElement("button");b.className="chip";b.textContent=k;b.setAttribute("aria-pressed","false");
+ b.onclick=()=>{open=open===k?null:k;[...C.children].forEach(x=>x.setAttribute("aria-pressed",x.textContent===open));
+  if(!open){A.hidden=true;return}
+  const a=areas[k];A.innerHTML=`<h2>${k}</h2><p class="note" style="margin:0">${a.why}</p><ul>${a.i.map(x=>`<li>${x}</li>`).join("")}</ul><button class="go" id="go">Открыть день: ${days[a.d].n}</button>`;
+  A.hidden=false;document.getElementById("go").onclick=()=>{cur=a.d;render();document.getElementById("dayTitle").scrollIntoView({behavior:"smooth",block:"start"})}};
+ C.appendChild(b)});
+render();
+</script>
+
+</html>
