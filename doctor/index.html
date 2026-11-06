@@ -55,13 +55,40 @@ textarea:focus-visible,button:focus-visible{outline:2px solid var(--sage);outlin
 .flags li::before{background:var(--alert)}
 .state{color:var(--muted);margin:0}
 .foot{color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);padding-top:14px;margin:0}
+.seg{display:flex;gap:4px;padding:4px;background:var(--sage-soft);border-radius:14px;align-self:flex-start}
+.seg button{font:inherit;font-weight:600;padding:9px 18px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--ink);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--sage);border-color:var(--line)}
+.ages .chip[aria-pressed="true"]{background:var(--sage);border-color:var(--sage);color:var(--bg)}
+.badges{display:flex;flex-wrap:wrap;gap:6px}
+.recs li{display:flex;flex-direction:column;gap:6px;padding:12px 14px;border:1px solid var(--line);border-radius:12px}
+.recs li::before{display:none}
+.meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:.85rem;color:var(--muted)}
+.ev{font-size:.74rem;font-weight:600;padding:2px 9px;border-radius:999px;white-space:nowrap}
+.ev.strong{background:var(--sage);color:var(--bg)}
+.ev.mid{background:var(--honey-soft);color:var(--honey)}
+.ev.exp{background:var(--line);color:var(--ink)}
+.cause{display:flex!important;justify-content:space-between;gap:12px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+.cause::before{display:none}
+.lik{color:var(--honey);font-weight:600;font-size:.9rem;text-align:right}
+.odds{background:var(--sage-soft);border-radius:12px;padding:14px 16px}
+.odds p{margin:10px 0 0}
+.src{font-size:.82rem;color:var(--muted);margin:0}
 </style>
 
 <div class="wrap">
   <header>
     <h1>Доктор Онлайн</h1>
-    <p>Не мазалайтынын өз сөзіңізбен жазыңыз. Программа қандай витамин керек екенін, жеміс, көкөніс, шай және пайдалы әдеттерді ұсынады. Дәрі-дәрмексіз.</p>
+    <p>Не мазалайтынын өз сөзіңізбен жазыңыз. Программа қандай витамин керек екенін, жеміс, көкөніс, шай және пайдалы әдеттерді ұсынады. Балаларға — жасына сай, дәрігерлер мен ғалымдардың ұсыныстары. Дәрі-дәрмексіз.</p>
   </header>
+
+  <div class="seg" role="group" aria-label="Кімге кеңес">
+    <button id="mAdult" type="button" aria-pressed="true">Үлкендер</button>
+    <button id="mKid" type="button" aria-pressed="false">Балалар</button>
+  </div>
+  <div id="ageBox" hidden>
+    <p class="ex-label">Баланың жасы</p>
+    <div class="chips ages" id="ages"></div>
+  </div>
 
   <form id="f">
     <textarea id="q" placeholder="Мысалы: таңертең тұрғанда басым айналады" aria-label="Не мазалайды"></textarea>
@@ -205,8 +232,6 @@ const arr=a=>Array.isArray(a)?a:[];
 const pair=x=>Array.isArray(x)?x:[x?.item??x?.name??"",x?.why??""];
 const vtrip=v=>Array.isArray(v)?v:[v?.name??"",v?.why??"",v?.foods??""];
 
-$("chips").innerHTML=EX.map((e,i)=>`<button class="chip" id="ex${i}" type="button">${esc(e)}</button>`).join("");
-$("chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;q.value=b.textContent;ask()});
 
 function render(d,source){
   panel.innerHTML=`
@@ -251,7 +276,7 @@ function getSample(){
 getSample();
 
 let ctrl=null;
-async function ask(){
+async function askAdult(){
   const text=q.value.trim();
   if(text.length<3){q.focus();return}
   try{localStorage.setItem("doc-q",text)}catch(e){}
@@ -276,11 +301,183 @@ async function ask(){
   if(m) render(m,"Дайын кеңес"); else notFound(text);
 }
 let reqId=0;
+/* ===== БАЛАЛАР БӨЛІМІ ===== */
+const AGES=[{id:"a0",l:"0–3 ай",r:[0,3]},{id:"a1",l:"3–12 ай",r:[3,12]},{id:"a2",l:"1–3 жас",r:[12,36]},{id:"a3",l:"3–7 жас",r:[36,84]},{id:"a4",l:"7 жастан үлкен",r:[84,216]}];
+const EX_KID=["1 жастағы балада бронхит","Балада қызу көтерілді","Нәрестенің мұрны бітелді","Балада іш өтіп жатыр","Баланың іші қатып қалды","Тіс шығып жатыр"];
+const EV={strong:"Дәлелі күшті",mid:"Дәлелі орташа",exp:"Дәрігерлер тәжірибесі"};
+const fit=(mn,mx,r)=>(mn??0)<r[1]&&(mx??999)>r[0];
+/* item formats: recs [мәтін, дәлел, дереккөз, minАй, maxАй]; food [мәтін, түсініктеме, min, max]; dont/flags [мәтін, min, max] */
+const SAFE=[
+ ["1 жасқа дейін бал бермеңіз — нәресте ботулизмі қаупі (AAP, ДДҰ)",0,12],
+ ["6 айға дейін тек емшек сүті немесе қоспа: шай, шөп тұнбасы, шырын бермеңіз (ДДҰ)",0,6],
+ ["3 айға дейінгі балада 38 °C және одан жоғары қызу болса — бірден дәрігерге (NICE)",0,3]];
+const KIDS=[
+ {id:"bronch",keys:["бронх","бронхиолит","жөтел","кашл","қақырық","ысқыр","хрип","өкпе"],
+  title:"Бронхит / бронхиолит",
+  summary:"1 жасқа дейінгі балаларда көбіне бронхиолит болады, оны вирус қоздырады (жиі RSV). Дәрі мен антибиотик әдетте көмектеспейді. Негізгі көмек — тамақтандыру, сұйықтық және бақылау.",
+  causes:[["Вирус (RSV, тұмау т.б.)","өте жиі"],["Бактерия","сирек"],["Аллергия, демікпе","үлкенірек балада, жиі қайталанса"]],
+  odds:["1 жасқа дейінгі балалардың шамамен үштен бірі бронхиолитпен ауырады (NICE)","Көп бала үйде жазылады: 100 баланың тек 2–3-і ауруханаға түседі (NICE)"],
+  course:"Ең ауыр кезі — 3–5-күн. Жөтел 2–4 аптаға дейін созылуы мүмкін, бұл қалыпты.",
+  recs:[["Аз-аздан, бірақ жиі емізу немесе тамақтандыру","exp","NICE"],
+        ["Мұрынға тұзды су (физиологиялық ерітінді) тамызып, сорғышпен тазалау — әсіресе емізер алдында","exp","NICE, AAP"],
+        ["Тыныс алуын, қанша ішіп жатқанын, жөргегінің дымқылдығын бақылау","exp","NICE"],
+        ["Үйде, баланың жанында темекі шекпеу","strong","ДДҰ, NICE"],
+        ["Жөтелге бір шай қасық бал — түнгі жөтелді азайтады (тек 1 жастан асқан балаға)","mid","Cochrane, NICE",12],
+        ["Жылы сусын, жылы сорпа","exp","NICE",12]],
+  food:[["Емшек сүті / қоспа","ең басты сусын әрі тамақ",0,12],["Алма, алмұрт, асқабақ пюресі","6 айдан бастап",3,36],["Су, жылы сорпа","1 жастан бастап",12],["Киви, итмұрын тұнбасы — С витамині","1 жастан бастап",12]],
+  dont:[["Ыстық бу жұтқызбаңыз — күйік қаупі (NICE)"],["Банка, горчичник, кеуде физиотерапиясын жасамаңыз (NICE)"],["Тұзды суды ингаляцияда өз бетіңізше қолданбаңыз"]],
+  flags:[["Тыныс жиілеп кетсе: минутына 50-ден көп (ДДҰ)",0,12],["Тыныс жиілеп кетсе: минутына 40-тан көп (ДДҰ)",12,60],["Қабырға арасы, кеуде іші тартылады, мұрын қанаттары кеңейеді, ыңқылдап дем алады"],["Ерні, тілі көгереді немесе тынысы тоқтап қалады — шұғыл 103"],["Әдеттегінің жартысынан аз ішеді, 12 сағат жөргегі құрғақ"],["Қатты әлсіз, оята алмайсыз"]]},
+ {id:"cold",keys:["мұрн","мұрын","сұйық","насморк","сопл","суық ти","простуд","тұмау","орви","түшкір"],
+  title:"Суық тию, мұрын бітелу",
+  summary:"Кішкентай балаларда суық тию жиі болады және өзі өтеді. Басты көмек — мұрынды тазалау, сұйықтық және демалыс.",
+  causes:[["Вирус","өте жиі"],["Аллергия","сирек, 2 аптадан көп созылса"]],
+  odds:["Кішкентай балалар жылына 6–8 рет және одан да көп суық тиюмен ауыруы қалыпты (NICE)"],
+  course:"Әдетте 7–10 күн. Жөтел 3 аптаға дейін қалуы мүмкін.",
+  recs:[["Тұзды сумен мұрынды жуу, сорғышпен тазалау","exp","AAP"],["Сұйықтықты жиі беру, емшекті жалғастыру","exp","NICE"],["Бір шай қасық бал — жөтел мен ұйқыға көмектеседі (1 жастан кейін)","mid","Cochrane",12],["Бөлмені желдету, ауаны тым құрғатпау","exp","AAP"]],
+  food:[["Емшек сүті / қоспа","жиі беріңіз",0,12],["Жылы сорпа, су","1 жастан бастап",12],["Апельсин, киви, болгар бұрышы","С витамині, 1 жастан",12]],
+  dont:[["Мұрынға сүт, пияз, сарымсақ шырынын тамызбаңыз — кілегей қабықты күйдіреді"],["Ыстық бу жұтқызбаңыз — күйік қаупі (NICE)"],["1 жасқа дейінгі баланың басын жастықпен көтермеңіз — қауіпсіз ұйқы ережесі (AAP)",0,12]],
+  flags:[["Құлағы ауырады немесе құлағынан ірің ағады"],["Тыныс алуы қиындайды"],["10 күннен кейін жақсармаса"],["Қызу 3 күннен көп"]]},
+ {id:"fever",keys:["қызу","қызба","температур","ыстығы","қызып"],
+  title:"Қызу көтерілу",
+  summary:"Қызу — ағзаның инфекциямен күресі. Маңыздысы градус емес, баланың жалпы жағдайы: ойнай ма, іше ме.",
+  causes:[["Вирустық инфекция","ең жиі"],["Бактериялық инфекция (құлақ, зәр жолы т.б.)","сирегірек, дәрігер тексеруі керек"],["Тіс шығу","тек сәл көтеріледі, 38 °C-тан аспайды"]],
+  odds:["Балалардағы қызудың көбі вирустан болады және 2–3 күнде басылады (NICE)"],
+  course:"Вирустық қызу әдетте 2–3 күн.",
+  recs:[["Сұйықтықты жиі беру, емшекті тоқтатпау","strong","NICE"],["Жеңіл киіндіру, көрпеге қымтамау","exp","NICE"],["Түнде де баланың жағдайын тексеріп тұру","exp","NICE"],["Ауырған кезде балабақшаға жібермеу","exp","NICE"]],
+  food:[["Емшек сүті / қоспа","жиі",0,12],["Су, компот, сорпа","аз-аздан жиі",6],["Жеміс пюресі, жеңіл ботқа","тәбеті болса",6]],
+  dont:[["Суық сумен, сірке суымен, арақпен сүртпеңіз (NICE)"],["Қалың киіндірмеңіз, қымтамаңыз"],["Жеуге зорламаңыз — бастысы сұйықтық"]],
+  flags:[["3–6 айлықта 39 °C және одан жоғары (NICE)",3,6],["Стақанмен басқанда жоғалмайтын бөртпе — шұғыл 103"],["Тырысу (судорога) — шұғыл 103"],["Қатты әлсіз, оята алмайсыз, мойны қатып қалған"],["Қызу 5 күннен көп"],["Ішпейді, жөргегі құрғақ"]]},
+ {id:"diar",keys:["іш өт","ішім өт","іші өт","понос","диаре","құс","рвот","улан","отрав","жүрек айн"],
+  title:"Іш өту, құсу",
+  summary:"Ең басты қауіп — сусыздану. ДДҰ алдымен сұйықтықты толтыруды және тамақтандыруды тоқтатпауды ұсынады.",
+  causes:[["Вирус (ротавирус, норовирус)","ең жиі"],["Тамақтан улану","жиі"],["Бактерия, паразит","сирек"]],
+  odds:["Құсу әдетте 1–2 күнде, іш өту 5–7 күнде басылады (NICE)"],
+  course:"Іш өту 5–7 күн, 2 аптадан аспайды.",
+  recs:[["Емшек сүтін тоқтатпаңыз, жиірек беріңіз","strong","ДДҰ"],["Аз-аздан жиі сұйықтық беру. ДДҰ ауызға ішетін тұзды-қантты ерітіндіні (ORS) ұсынады","strong","ДДҰ"],["Әдеттегі тамақты жалғастыру, ашықтырмау","strong","ДДҰ",6],["Қолды жиі жуу — үйдегі басқаларға жұқпауы үшін","strong","ДДҰ"]],
+  food:[["Емшек сүті / қоспа","тоқтатпаңыз",0,12],["Банан, күріш ботқасы, пісірілген алма","6 айдан бастап",3],["Айран, йогурт","1 жастан бастап",12]],
+  dont:[["Шырын, газды сусын, тәтті шай бермеңіз — іш өтуді күшейтеді"],["Баланы ашықтырмаңыз"]],
+  flags:[["Жөргегі 6 сағаттан көп құрғақ немесе зәрі өте аз"],["Көзі ішіне кірген, жыласа көз жасы жоқ, ауызы құрғақ"],["Нәжісте қан"],["Жасыл немесе қанды құсу"],["Ішкенінің бәрін құсып тастайды"],["Қатты ұйқышыл, әлсіз"]]},
+ {id:"const",keys:["іш қат","іші қат","запор","дәрет","үлкен дәрет"],
+  title:"Іш қату",
+  summary:"Балалардағы іш қату жиі кездеседі. Көп жағдайда тамақ, сұйықтық және қозғалыс көмектеседі.",
+  causes:[["Сұйықтық пен талшық аз","өте жиі"],["Жаңа тамаққа, қоспаға ауысу","жиі"],["Дәретханадан қорқу, ұстап қалу","2–4 жаста жиі"]],
+  odds:["Балалардың шамамен 5–30%-ында іш қату кездеседі (NICE)"],
+  course:"Тамақ түзелсе, бірнеше күнде жақсарады.",
+  recs:[["Сұйықтықты көбейту","exp","NICE",6],["Жеміс пюресі: алмұрт, кепкен өрік, алма","exp","NICE",6],["Ішті сағат тілімен уқалау, аяғын велосипедтей айналдыру","exp","AAP"],["Тамақтан кейін тұрақты түрде горшокқа отырғызу","exp","NICE",24],["Көбірек қозғалыс, ойын","exp","NICE",12]],
+  food:[["Алмұрт, кепкен өрік, өрік пюресі","6 айдан бастап",3],["Сұлы ботқасы, көкөніс","6 айдан бастап",3],["Су","күні бойы, 6 айдан бастап",3]],
+  dont:[["Сабын, термометр, мақта таяқшасын сұқпаңыз"],["Дәретке зорламаңыз, ұрыспаңыз"]],
+  flags:[["Туғаннан бері іші қатады"],["Нәжісте қан"],["Іші кеуіп, құсса"],["Салмақ қоспаса"],["2 аптадан көп жақсармаса"]]},
+ {id:"teeth",keys:["тіс","зуб"],
+  title:"Тіс шығу",
+  summary:"Тіс шығу — қалыпты процесс. Сілекей ағады, бала мазасызданады, бірақ ол қатты ауру тудырмайды.",
+  causes:[["Тіс шығу","6 айдан 3 жасқа дейін қалыпты"]],
+  odds:["Тіс шығу 38 °C-тан жоғары қызу мен қатты іш өту тудырмайды — ондай болса басқа себеп іздеңіз (AAP)"],
+  course:"Әр тіс бірнеше күн мазалайды.",
+  recs:[["Таза саусақпен қызылиекті ақырын уқалау","exp","AAP"],["Салқын (мұздатылмаған) тіс кемірткіш беру","exp","AAP"],["Таза, салқын матаны кемірту","exp","AAP"]],
+  food:[["Салқын пюре, йогурт","6 айдан бастап",3],["Салқын қияр, алма тілімі — тек қасыңызда отырып","1 жастан, тұншығудан сақтаңыз",12]],
+  dont:[["Янтарь моншақ таққызбаңыз — тұншығу қаупі (FDA, AAP)"],["Ауырсыздандыратын гельдерді педиатрсыз қолданбаңыз (FDA)"]],
+  flags:[["Қызу 38 °C және одан жоғары"],["Ішуден бас тартады"],["Қатты іш өту"]]}
+];
+const KID_URGENT=["көгер","тырыс","судорог","тыныс тоқта","дем тоқта","есінен","оянбай"];
+const KID_PROMPT=`Сен — балалар денсаулығы бойынша дәлелді медицинаға сүйенетін көмекші. Ата-ана баланың жасын және жағдайын жазады. ТЕК дәрі-дәрмексіз кеңес бер: күтім, тамақтандыру, сусын, жасына сай тағам, бақылау. Дәрі, антибиотик, сироп, таблетка, дәрі тамшыларын, БАД пен дозаларды АТАМА. Кеңестерді ДДҰ (WHO), NICE, AAP, Cochrane сияқты ресми ұйымдардың нұсқауларына сүйеніп жаз. Әр кеңеске дәлел күшін қой: "strong" — зерттеулермен жақсы дәлелденген, "mid" — дәлел орташа, "exp" — дәрігерлер келісімі мен тәжірибесі. Дереккөз ретінде тек ұйымның атын жаз, ойдан шығарма. Ықтимал себептерді жиілігімен жаз («өте жиі», «жиі», «сирек»). Белгілі ғылыми деректер болса (қаншасы ауырады, қанша күн созылады) odds бөліміне сандарымен жаз. Баланың жасын міндетті түрде ескер: 1 жасқа дейін бал жоқ; 6 айға дейін тек емшек сүті не қоспа; балаға ыстық бу жоқ. Қауіпті белгілерді міндетті түрде жаз; шұғыл болса urgent=true қой. Жауап ҚАЗАҚ тілінде, қарапайым әрі қысқа.
+ТЕК мына пішіндегі JSON қайтар:
+{"title":"","summary":"1–2 сөйлем","urgent":false,"causes":[["себеп","жиілігі"]],"odds":["ғылыми дерек (ұйым)"],"course":"қанша уақытқа созылады","recs":[["кеңес","strong|mid|exp","ұйым"]],"food":[["тағам/сусын","түсініктеме"]],"dont":["не істемеу керек"],"flags":["қашан шұғыл дәрігерге"]}
+3–6 кеңес, 2–4 тағам.`;
+
+let mode="adult",age="a2";
+try{mode=localStorage.getItem("doc-mode")==="kid"?"kid":"adult";const a=localStorage.getItem("doc-age");if(AGES.some(x=>x.id===a))age=a}catch(e){}
+const AG=()=>AGES.find(a=>a.id===age);
+
+function drawUI(){
+  $("mAdult").setAttribute("aria-pressed",String(mode==="adult"));
+  $("mKid").setAttribute("aria-pressed",String(mode==="kid"));
+  $("ageBox").hidden=mode!=="kid";
+  $("ages").innerHTML=AGES.map(a=>`<button class="chip" type="button" id="age-${a.id}" data-id="${a.id}" aria-pressed="${a.id===age}">${a.l}</button>`).join("");
+  const ex=mode==="kid"?EX_KID:EX;
+  $("chips").innerHTML=ex.map((e,i)=>`<button class="chip" id="ex${i}" type="button">${esc(e)}</button>`).join("");
+  q.placeholder=mode==="kid"?"Мысалы: 1 жастағы балада бронхит, жөтеледі":"Мысалы: таңертең тұрғанда басым айналады";
+  try{localStorage.setItem("doc-mode",mode);localStorage.setItem("doc-age",age)}catch(e){}
+}
+$("mAdult").addEventListener("click",()=>{mode="adult";drawUI()});
+$("mKid").addEventListener("click",()=>{mode="kid";drawUI()});
+$("ages").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;age=b.dataset.id;drawUI();if(q.value.trim().length>=3)askKid()});
+$("chips").addEventListener("click",e=>{const b=e.target.closest(".chip");if(!b)return;q.value=b.textContent;ask()});
+
+function detect(text){
+  const t=text.toLowerCase();
+  if(/(бала|нәресте|сәби|ребен|ребён|малыш|младен|груднич)/.test(t)) mode="kid";
+  const m=t.match(/(\d+[.,]?\d*)\s*(жас|ай|год|лет|мес)/);
+  if(m&&mode==="kid"){
+    const n=parseFloat(m[1].replace(",","."));
+    const months=/(ай|мес)/.test(m[2])?n:n*12;
+    age=(AGES.find(a=>months>=a.r[0]&&months<a.r[1])||AGES[4]).id;
+  }
+  drawUI();
+}
+function ask(){detect(q.value);return mode==="kid"?askKid():askAdult()}
+
+const D=x=>Array.isArray(x)?x:[x];
+const hasHoney=s=>/(^|[^а-яәіңғүұқөһё])бал(\s|,|\.|мен|ды|ға|$)/i.test(String(s));
+function evKey(v){v=String(v||"").toLowerCase();if(EV[v])return v;if(v.includes("күшт")||v.includes("strong"))return"strong";if(v.includes("орта")||v.includes("mid"))return"mid";return"exp"}
+
+function renderKid(d,source){
+  const g=AG(),r=g.r,baby=r[1]<=12;
+  const ok=x=>{const a=D(x);return fit(a[a.length-2]===undefined||typeof a[a.length-2]!=="number"?undefined:a[a.length-2],typeof a[a.length-1]==="number"?a[a.length-1]:undefined,r)};
+  const keepR=x=>{const a=D(x);return fit(typeof a[3]==="number"?a[3]:undefined,typeof a[4]==="number"?a[4]:undefined,r)&&!(baby&&hasHoney(a[0]))};
+  const keepF=x=>{const a=D(x);return fit(typeof a[2]==="number"?a[2]:undefined,typeof a[3]==="number"?a[3]:undefined,r)&&!(baby&&hasHoney(a[0]))};
+  const keepS=x=>{const a=D(x);return fit(typeof a[1]==="number"?a[1]:undefined,typeof a[2]==="number"?a[2]:undefined,r)};
+  const dont=[...SAFE.filter(keepS),...arr(d.dont).filter(keepS)].map(x=>D(x)[0]);
+  const flags=arr(d.flags).filter(keepS).map(x=>D(x)[0]);
+  panel.innerHTML=`
+   <div class="badges">${source?`<span class="badge">${esc(source)}</span>`:""}<span class="badge">Жасы: ${esc(g.l)}</span></div>
+   <h2>${esc(d.title)}</h2>
+   <p class="lead">${esc(d.summary)}</p>
+   ${d.urgent?`<div class="urgent">Бұл қауіпті болуы мүмкін. Күтпеңіз — қазір 103-ке қоңырау шалыңыз.</div>`:""}
+   ${arr(d.causes).length?`<section class="sec"><h3>Ықтимал себептер</h3><ul>${arr(d.causes).map(D).map(c=>`<li class="cause"><span>${esc(c[0])}</span><span class="lik">${esc(c[1]??"")}</span></li>`).join("")}</ul></section>`:""}
+   ${(arr(d.odds).length||d.course)?`<section class="sec odds"><h3>Ғалымдар деректері</h3><ul>${arr(d.odds).map(x=>`<li><span>${esc(D(x)[0])}</span></li>`).join("")}</ul>${d.course?`<p><b>Ұзақтығы:</b> ${esc(d.course)}</p>`:""}</section>`:""}
+   <section class="sec"><h3>Дәрігерлер мен ғалымдар ұсынысы</h3><ul class="recs">${arr(d.recs).filter(keepR).map(D).map(x=>{const k=evKey(x[1]);return `<li><span>${esc(x[0])}</span><span class="meta"><span class="ev ${k}">${EV[k]}</span>${x[2]?`<span>Дереккөз: ${esc(x[2])}</span>`:""}</span></li>`}).join("")}</ul></section>
+   <section class="sec"><h3>Тамақ пен сусын (жасына сай)</h3><ul>${arr(d.food).filter(keepF).map(D).map(x=>`<li><span><b>${esc(x[0])}</b>${x[1]?` — ${esc(x[1])}`:""}</span></li>`).join("")}</ul></section>
+   <section class="sec avoid"><h3>Жасамаңыз</h3><ul>${dont.map(x=>`<li><span>${esc(x)}</span></li>`).join("")}</ul></section>
+   <section class="sec flags"><h3>Бірден дәрігерге / 103</h3><ul>${flags.map(x=>`<li><span>${esc(x)}</span></li>`).join("")}</ul></section>
+   <p class="src">Дереккөздер: ДДҰ (Дүниежүзілік денсаулық сақтау ұйымы), NICE (Ұлыбритания), AAP (Америка педиатрлар академиясы), Cochrane ғылыми шолулары. Кішкентай балаға қатысты күмән болса — педиатрға көрсетіңіз.</p>`;
+}
+function kidLocal(text){
+  const t=text.toLowerCase();let best=null,score=0;
+  for(const d of KIDS){const s=d.keys.reduce((n,k)=>n+(t.includes(k)?1:0),0);if(s>score){score=s;best=d}}
+  return best?{...best,urgent:[...URGENT,...KID_URGENT].some(k=>t.includes(k))}:null;
+}
+async function askKid(){
+  const text=q.value.trim();
+  if(text.length<3){q.focus();return}
+  try{localStorage.setItem("doc-q",text)}catch(e){}
+  const my=++reqId;
+  const m=kidLocal(text);
+  if(m) renderKid(m,"Дайын кеңес · ЖИ жауабы жүктелуде…"); else panel.innerHTML=`<p class="state">ЖИ жауап жазып жатыр…</p>`;
+  panel.scrollIntoView({behavior:"smooth",block:"start"});
+  const sample=await getSample();
+  let done=false;
+  if(sample){
+    if(ctrl)ctrl.abort(); ctrl=new AbortController();
+    const timer=setTimeout(()=>ctrl.abort(),35000);
+    try{
+      const d=await sample.json(KID_PROMPT+"\n\nБаланың жасы: "+AG().l+"\nЖағдайы: "+text,{signal:ctrl.signal});
+      if(my!==reqId)return;
+      if([...URGENT,...KID_URGENT].some(k=>text.toLowerCase().includes(k))) d.urgent=true;
+      renderKid(d,"ЖИ жауабы"); done=true;
+    }catch(e){}
+    clearTimeout(timer);
+  }
+  if(my!==reqId||done)return;
+  if(m) renderKid(m,"Дайын кеңес");
+  else panel.innerHTML=`<p class="state">Бұл шағым бойынша дайын кеңес табылмады. Басқаша жазып көріңіз (мысалы: «бронхит», «қызу», «іш өту», «мұрын бітелу») немесе мысалдарды таңдаңыз. Бала нашарласа — педиатрға немесе 103-ке хабарласыңыз.</p>`;
+}
+
 $("f").addEventListener("submit",e=>{e.preventDefault();ask()});
 q.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();ask()}});
 
+drawUI();
 try{const s=localStorage.getItem("doc-q");if(s)q.value=s}catch(e){}
-render(DB.find(d=>d.id==="dizzy"),"Мысал жауап");
+if(mode==="kid") renderKid(KIDS[0],"Мысал жауап"); else render(DB.find(d=>d.id==="dizzy"),"Мысал жауап");
 </script>
 
 </body></html>
